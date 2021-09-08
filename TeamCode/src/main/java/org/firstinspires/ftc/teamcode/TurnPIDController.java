@@ -27,7 +27,7 @@ public class TurnPIDController {
 
         // I
         accumulatedError += error;
-        if (error == 0) {
+        if (Math.abs(error) < 0.1) {
             accumulatedError = 0;
         }
 
