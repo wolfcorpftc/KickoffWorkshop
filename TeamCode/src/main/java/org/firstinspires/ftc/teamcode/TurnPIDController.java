@@ -10,6 +10,7 @@ public class TurnPIDController {
     private double lastError = 0;
     private double accumulatedError = 0;
     private double lastTime = -1;
+    private double lastSlope = 0;
 
     public TurnPIDController(double target, double p, double i, double d) {
         kP = p;
@@ -36,10 +37,15 @@ public class TurnPIDController {
         if (lastTime > 0) {
             slope = (error - lastError) / (timer.milliseconds() - lastTime);
         }
+        lastSlope = slope;
         lastTime = timer.milliseconds();
 
-        // TODO: find out what feedforward power is, and replace multiplier with (1 - kF)
-        double motorPower = (error < 0 ? -0.3 : 0.3);
-        return motorPower + 0.7 * Math.tanh(kP * error + kI * accumulatedError + kD * slope);
+        double motorPower = (error < 0 ? -0.1 : 0.1) +
+                0.9 * Math.tanh(kP * error + kI * accumulatedError - kD * slope);
+        return Math.abs(motorPower) < 0.104 ? 0 : motorPower;
+    }
+
+    double getLastSlope() {
+        return lastSlope;
     }
 }

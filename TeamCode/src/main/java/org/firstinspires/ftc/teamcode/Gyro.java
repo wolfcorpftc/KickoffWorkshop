@@ -88,35 +88,51 @@ public class Gyro extends LinearOpMode{
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
 
-        turn(90);
+        // 0
+        turnPID(90);
 
-        sleep(3000);
+        final boolean full = false;
+        if (full) {
+            // 1
+            turn(90);
 
-        Thread a = new Thread(() ->
-                turn(90)
-        );
+            sleep(3000);
 
-        a.start();
+            // 2
+            Thread a = new Thread(() ->
+                    turn(90)
+            );
 
-        // Do other stuff here
+            a.start();
 
-        a.join();
+            // Do other stuff here
 
-        sleep(3000);
+            a.join();
 
-        turnTo(90);
+            sleep(3000);
 
-        sleep(3000);
+            // 3
+            turnTo(90);
 
-        Thread b = new Thread(() ->
-                turnTo(-90)
-        );
+            sleep(3000);
 
-        b.start();
+            // 4
+            Thread b = new Thread(() ->
+                    turnTo(-90)
+            );
 
-        // Do other stuff here
+            b.start();
 
-        b.join();
+            // Do other stuff here
+
+            b.join();
+        }
+
+        // 5 (-90 -> 0)
+        //turnPID(90);
+
+        // 6 (0 -> -90)
+        // turnToPID(-90);
 
     }
 
@@ -190,10 +206,17 @@ public class Gyro extends LinearOpMode{
     void turnToPID(double targetAngle) {
         resetAngle();
 
-        TurnPIDController pid = new TurnPIDController(targetAngle, 0.1, 0, 0.5);
+        TurnPIDController pid = new TurnPIDController(targetAngle, 0.01, 0, 0.003);
         double motorPower = 0;
-        while (targetAngle != getAngle()) {
+        telemetry.setMsTransmissionInterval(50);
+        ElapsedTime turnTime = new ElapsedTime();
+        while (Math.abs(targetAngle - getAngle()) > 0.5 || pid.getLastSlope() > 0.75 || turnTime.milliseconds() < 40000) {
             motorPower = pid.update(getAngle());
+            telemetry.addData("Current Angle", getAngle());
+            telemetry.addData("Target Angle", targetAngle);
+            telemetry.addData("Slope", pid.getLastSlope());
+            telemetry.addData("Power", motorPower);
+            telemetry.update();
             robot.setMotorPower(-motorPower, motorPower, -motorPower, motorPower);
         }
         robot.setAllPower(0);

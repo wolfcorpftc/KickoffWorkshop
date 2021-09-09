@@ -86,6 +86,10 @@ public class HardwarePushbot
         rightFront.setDirection(DcMotor.Direction.FORWARD);
         leftBack.setDirection(DcMotor.Direction.REVERSE);// Set to FORWARD if using AndyMark motors
         rightBack.setDirection(DcMotor.Direction.FORWARD);
+        leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         // Set all motors to zero power
         setAllPower(0);
@@ -120,8 +124,6 @@ public class HardwarePushbot
         leftBack.setPower(lB);
         rightBack.setPower(rB);
         rightFront.setPower(rF);
-
-
     }
 }
 
