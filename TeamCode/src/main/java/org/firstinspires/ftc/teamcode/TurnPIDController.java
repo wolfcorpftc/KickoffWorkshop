@@ -25,10 +25,17 @@ public class TurnPIDController {
 
         // P
         double error = targetAngle - currentAngle;
+        error %= 360;
+        error += 360;
+        error %= 360;
+        if (error > 180) {
+            error -= 360;
+        }
 
         // I
+        accumulatedError *= Math.signum(error);
         accumulatedError += error;
-        if (Math.abs(error) < 0.1) {
+        if (Math.abs(error) < 2) {
             accumulatedError = 0;
         }
 
@@ -38,14 +45,15 @@ public class TurnPIDController {
             slope = (error - lastError) / (timer.milliseconds() - lastTime);
         }
         lastSlope = slope;
+        lastError = error;
         lastTime = timer.milliseconds();
 
-        double motorPower = (error < 0 ? -0.1 : 0.1) +
-                0.9 * Math.tanh(kP * error + kI * accumulatedError - kD * slope);
-        return Math.abs(motorPower) < 0.104 ? 0 : motorPower;
+        double motorPower = 0.1 * Math.signum(error)
+                + 0.9 * Math.tanh(kP * error + kI * accumulatedError - kD * slope);
+        return motorPower;
     }
 
-    double getLastSlope() {
+    public double getLastSlope() {
         return lastSlope;
     }
 }

@@ -1,32 +1,3 @@
-/* Copyright (c) 2017 FIRST. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification,
- * are permitted (subject to the limitations in the disclaimer below) provided that
- * the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this list
- * of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice, this
- * list of conditions and the following disclaimer in the documentation and/or
- * other materials provided with the distribution.
- *
- * Neither the name of FIRST nor the names of its contributors may be used to endorse or
- * promote products derived from this software without specific prior written permission.
- *
- * NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED BY THIS
- * LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
@@ -38,26 +9,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
-/**
- * This file illustrates the concept of driving a path based on time.
- * It uses the common Pushbot hardware class to define the drive on the robot.
- * The code is structured as a LinearOpMode
- *
- * The code assumes that you do NOT have encoders on the wheels,
- *   otherwise you would use: PushbotAutoDriveByEncoder;
- *
- *   The desired path in this example is:
- *   - Drive forward for 3 seconds
- *   - Spin right for 1.3 seconds
- *   - Drive Backwards for 1 Second
- *   - Stop and close the claw.
- *
- *  The code is written in a simple form with no optimizations.
- *  However, there are several ways that this type of sequence could be streamlined,
- *
- * Use Android Studios to Copy this Class, and Paste it into your team's code folder with a new name.
- * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
- */
+
 @Autonomous(name="Kickoff Presentation: Gyro", group="Pushbot")
 public class Gyro extends LinearOpMode{
 
@@ -88,52 +40,14 @@ public class Gyro extends LinearOpMode{
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
 
-        // 0
-        turnPID(90);
-
-        final boolean full = false;
-        if (full) {
-            // 1
+        final int STAGE = 1;
+        if (STAGE == 1) {
             turn(90);
-
             sleep(3000);
-
-            // 2
-            Thread a = new Thread(() ->
-                    turn(90)
-            );
-
-            a.start();
-
-            // Do other stuff here
-
-            a.join();
-
-            sleep(3000);
-
-            // 3
-            turnTo(90);
-
-            sleep(3000);
-
-            // 4
-            Thread b = new Thread(() ->
-                    turnTo(-90)
-            );
-
-            b.start();
-
-            // Do other stuff here
-
-            b.join();
+            turnTo(-90);
+        } else if (STAGE == 2) {
+            turnPID(90);
         }
-
-        // 5 (-90 -> 0)
-        //turnPID(90);
-
-        // 6 (0 -> -90)
-        // turnToPID(-90);
-
     }
 
     // resets currAngle Value
@@ -166,8 +80,6 @@ public class Gyro extends LinearOpMode{
     }
 
     public void turn(double degrees){
-        //set
-
         resetAngle();
 
         double error = degrees;
@@ -199,25 +111,29 @@ public class Gyro extends LinearOpMode{
         turn(error);
     }
 
-    void turnPID(double degrees) {
-        turnToPID(degrees + getAngle());
+    public double getAbsoluteAngle() {
+        return robot.imu.getAngularOrientation(
+                AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES
+        ).firstAngle;
+    }
+
+    public void turnPID(double degrees) {
+        turnToPID(degrees + getAbsoluteAngle());
     }
 
     void turnToPID(double targetAngle) {
-        resetAngle();
-
         TurnPIDController pid = new TurnPIDController(targetAngle, 0.01, 0, 0.003);
-        double motorPower = 0;
         telemetry.setMsTransmissionInterval(50);
-        ElapsedTime turnTime = new ElapsedTime();
-        while (Math.abs(targetAngle - getAngle()) > 0.5 || pid.getLastSlope() > 0.75 || turnTime.milliseconds() < 40000) {
-            motorPower = pid.update(getAngle());
-            telemetry.addData("Current Angle", getAngle());
+        // Checking lastSlope to make sure that it's not oscillating when it quits
+        while (Math.abs(targetAngle - getAbsoluteAngle()) > 0.5 || pid.getLastSlope() > 0.75) {
+            double motorPower = pid.update(getAbsoluteAngle());
+            robot.setMotorPower(-motorPower, motorPower, -motorPower, motorPower);
+
+            telemetry.addData("Current Angle", getAbsoluteAngle());
             telemetry.addData("Target Angle", targetAngle);
             telemetry.addData("Slope", pid.getLastSlope());
             telemetry.addData("Power", motorPower);
             telemetry.update();
-            robot.setMotorPower(-motorPower, motorPower, -motorPower, motorPower);
         }
         robot.setAllPower(0);
     }
